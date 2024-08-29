@@ -7,7 +7,7 @@ All textures were taken from: https://planetpixelemporium.com/planets.html
 1. Install dependencies
 
 ```sh
-npm i
+npm install
 ```
 
 2. run the app
