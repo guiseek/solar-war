@@ -1,6 +1,7 @@
 import { AnimationAction, AnimationMixer, Group, Vector3 } from "three";
 import { GLTF } from "three/examples/jsm/Addons.js";
 import { Missile } from "./missile";
+import { audio } from "../audio";
 
 export class Ship {
   #angle = 0.01;
@@ -69,6 +70,7 @@ export class Ship {
     this.#mixer.update(delta);
     if (this.control.ShiftLeft && this.#velocity.curr < this.#velocity.max) {
       this.#velocity.curr += this.#velocity.acc;
+      if (audio.passBy.paused) audio.passBy.play();
     }
 
     if (!this.control.ShiftLeft && this.#velocity.curr > this.#velocity.min) {

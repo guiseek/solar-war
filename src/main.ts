@@ -1,5 +1,5 @@
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
-import { GLTFLoader } from "three/examples/jsm/Addons.js";
+import { Capsule, GLTFLoader, Octree } from "three/examples/jsm/Addons.js";
 import { Starfield, Earth, Sun, astros } from "./astros";
 import { Ship, control } from "./ship";
 import { Planet } from "./planet";
@@ -10,8 +10,11 @@ import {
   PerspectiveCamera,
   LinearSRGBColorSpace,
   ACESFilmicToneMapping,
+  Box3,
+  Vector3,
 } from "three";
 import "./style.scss";
+import { audio } from "./audio";
 
 const w = innerWidth;
 const h = innerHeight;
@@ -35,7 +38,16 @@ document.body.appendChild(renderer.domElement);
 const sun = new Sun().getSun();
 scene.add(sun);
 
+let octree = new Octree();
+
 let ship: Ship;
+let shipCollider = new Capsule(
+  new Vector3(0, 0.35, 0),
+  new Vector3(0, 1, 0),
+  0.35
+);
+
+let shipBoundingBox = new Box3();
 
 const loader = new GLTFLoader();
 loader.loadAsync("models/ship.glb").then((gltf) => {
@@ -43,8 +55,16 @@ loader.loadAsync("models/ship.glb").then((gltf) => {
   ship.setPosition(50, 5, 0);
   scene.add(ship.getShip());
 
+  shipBoundingBox.setFromObject(ship.getShip());
+
   loader.loadAsync("models/missile.glb").then((gltf) => {
     ship.setMissile(gltf);
+
+    audio.passBy.onended = () => {
+      audio.ship.onended = () => audio.ship.play();
+      audio.ship.play();
+    };
+    audio.passBy.play();
   });
 
   animate();
@@ -65,9 +85,13 @@ scene.add(earth);
 const starfield = new Starfield().getStarfield();
 scene.add(starfield);
 
+const planetTree: Octree[] = [];
+
 astros.forEach((item) => {
   const planet = new Planet(item).getPlanet();
   scene.add(planet);
+
+  planetTree.push(octree.fromGraphNode(planet));
 });
 
 renderer.render(scene, camera);
@@ -86,6 +110,12 @@ const animate = () => {
   const delta = clock.getDelta();
 
   ship.update(delta);
+
+  shipBoundingBox = new Box3().setFromObject(ship.getShip());
+
+  for (const planet of planetTree) {
+    console.log(planet.capsuleIntersect(shipCollider));
+  }
 
   controls.target = ship.position;
 
